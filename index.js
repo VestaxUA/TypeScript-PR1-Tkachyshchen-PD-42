@@ -1,5 +1,12 @@
 class Player {
-    constructor(name) {
+    name: string;
+    health: number;
+    attackPower: number;
+    level: number;
+    alive: boolean;
+    items: Item[];
+
+    constructor(name: string) {
         this.name = name;
         this.health = 100;
         this.attackPower = 10;
@@ -8,7 +15,7 @@ class Player {
         this.items = [];
     }
 
-    attack(target) {
+    attack(target: Monster): void {
         if (this.alive && target.alive) {
             console.log(`${this.name} атакує ${target.name} на ${this.attackPower} очок пошкоджень.`);
             target.takeDamage(this.attackPower);
@@ -18,7 +25,7 @@ class Player {
         }
     }
 
-    takeDamage(amount) {
+    takeDamage(amount: number): void {
         this.health -= amount;
         console.log(`${this.name} отримав ${amount} пошкоджень. Здоров'я: ${this.health}`);
         
@@ -29,7 +36,7 @@ class Player {
         }
     }
 
-    heal(amount) {
+    heal(amount: number): void {
         if (this.alive) {
             this.health += amount;
             console.log(`${this.name} вилікувався на ${amount} очок здоров'я. Здоров'я: ${this.health}`);
@@ -38,7 +45,7 @@ class Player {
         }
     }
 
-    gainExperience(amount) {
+    gainExperience(amount: number): void {
         console.log(`${this.name} отримав ${amount} досвіду.`);
         if (this.level < 5) {
             if (amount >= this.level * 20) {
@@ -47,14 +54,14 @@ class Player {
         }
     }
 
-    levelUp() {
+    levelUp(): void {
         this.level += 1;
         this.attackPower += 5;
         this.health += 20;
         console.log(`${this.name} підвищив рівень! Новий рівень: ${this.level}, сила атаки: ${this.attackPower}, здоров'я: ${this.health}`);
     }
 
-    useItem(item) {
+    useItem(item: Item): void {
         if (this.items.includes(item)) {
             console.log(`${this.name} використовує ${item.name}.`);
             item.use(this);
@@ -64,14 +71,20 @@ class Player {
         }
     }
 
-    addItem(item) {
+    addItem(item: Item): void {
         this.items.push(item);
         console.log(`${this.name} отримав предмет: ${item.name}.`);
     }
 }
 
 class Monster {
-    constructor(name, level = 1) {
+    name: string;
+    health: number;
+    attackPower: number;
+    level: number;
+    alive: boolean;
+
+    constructor(name: string, level: number = 1) {
         this.name = name;
         this.health = level * 50;
         this.attackPower = level * 5;
@@ -79,7 +92,7 @@ class Monster {
         this.alive = true;
     }
 
-    attack(target) {
+    attack(target: Player): void {
         if (this.alive && target.alive) {
             console.log(`${this.name} атакує ${target.name} на ${this.attackPower} очок пошкоджень.`);
             target.takeDamage(this.attackPower);
@@ -88,7 +101,7 @@ class Monster {
         }
     }
 
-    takeDamage(amount) {
+    takeDamage(amount: number): void {
         this.health -= amount;
         console.log(`${this.name} отримав ${amount} пошкоджень. Здоров'я: ${this.health}`);
 
@@ -101,35 +114,42 @@ class Monster {
 }
 
 class Item {
-    constructor(name, effect) {
+    name: string;
+    effect: (target: Player) => void;
+
+    constructor(name: string, effect: (target: Player) => void) {
         this.name = name;
         this.effect = effect;
     }
 
-    use(target) {
+    use(target: Player): void {
         console.log(`${target.name} використовує ${this.name}.`);
         this.effect(target);
     }
 }
 
 class Game {
+    players: Player[];
+    monsters: Monster[];
+    turnCount: number;
+
     constructor() {
         this.players = [];
         this.monsters = [];
         this.turnCount = 0;
     }
 
-    addPlayer(player) {
+    addPlayer(player: Player): void {
         this.players.push(player);
         console.log(`${player.name} приєднався до гри.`);
     }
 
-    addMonster(monster) {
+    addMonster(monster: Monster): void {
         this.monsters.push(monster);
         console.log(`${monster.name} з'явився у грі.`);
     }
 
-    start() {
+    start(): void {
         console.log("Гра розпочалася!");
         while (this.players.some(p => p.alive) && this.monsters.some(m => m.alive)) {
             this.turn();
@@ -137,7 +157,7 @@ class Game {
         console.log("Гра завершена.");
     }
 
-    turn() {
+    turn(): void {
         this.turnCount++;
         console.log(`Хід ${this.turnCount}`);
 
@@ -163,8 +183,8 @@ class Game {
     }
 }
 
-const healingPotion = new Item("Зілля Лікування", (target) => target.heal(30));
-const strengthPotion = new Item("Зілля Сили", (target) => {
+const healingPotion = new Item("Зілля Лікування", (target: Player) => target.heal(30));
+const strengthPotion = new Item("Зілля Сили", (target: Player) => {
     target.attackPower += 5;
     console.log(`${target.name} отримав +5 до сили атаки.`);
 });

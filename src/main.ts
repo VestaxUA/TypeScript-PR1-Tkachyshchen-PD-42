@@ -67,6 +67,52 @@ const schedule: Lesson[] = [
   { id: 5, courseId: 5, professorId: 2, classroomNumber: "105", dayOfWeek: "Friday", timeSlot: "15:45-17:15" },
 ];
 
+function handleAddProfessor(professor: Professor): void {
+  addProfessor(professor);
+}
+
+function handleAddLesson(lesson: Lesson): boolean {
+  return addLesson(lesson);
+}
+
+function handleFindAvailableClassrooms(
+  timeSlot: TimeSlot,
+  dayOfWeek: DayOfWeek,
+): string[] {
+  return findAvailableClassrooms(timeSlot, dayOfWeek);
+}
+
+function handleGetProfessorSchedule(professorId: number): Lesson[] {
+  return getProfessorSchedule(professorId);
+}
+
+function handleGetClassroomUtilization(classroomNumber: string): number {
+  return getClassroomUtilization(classroomNumber);
+}
+
+function handleGetMostPopularCourseType(): CourseType {
+  return getMostPopularCourseType();
+}
+
+function handleReassignClassroom(
+  lessonId: number,
+  newClassroomNumber: string,
+): boolean {
+  return reassignClassroom(lessonId, newClassroomNumber);
+}
+
+function handleCancelLesson(lessonId: number): boolean {
+  const index = schedule.findIndex((lesson) => lesson.id === lessonId);
+  if (index === -1) {
+    console.error(`Заняття з ID ${lessonId} не знайдено.`);
+    return false;
+  }
+  schedule.splice(index, 1); // Видаляємо заняття
+  fillScheduleTable(); // Оновлюємо таблицю
+  console.log(`Заняття з ID ${lessonId} скасовано.`);
+  return true;
+}
+
 // Функція для заповнення таблиці розкладу у HTML
 function fillScheduleTable() {
   const tableBody = document.querySelector("#scheduleTable tbody") as HTMLTableSectionElement | null;

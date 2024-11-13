@@ -6,14 +6,52 @@ const electronics = [
 const clothing = [
     { id: 2, name: "Футболка", price: 500, category: 'clothing', size: 'M', material: 'Cotton' }
 ];
-const phone = findProduct(electronics, 1);
 let cart = [];
-if (phone) {
-    cart = addToCart(cart, phone, 1);
+function displayProducts() {
+    const productList = document.getElementById("product-list");
+    electronics.forEach(product => {
+        const productElement = document.createElement("div");
+        productElement.innerHTML = `
+      <h3>${product.name}</h3>
+      <p>Ціна: ${product.price} грн</p>
+      <button onclick="addToCartHandler(${product.id}, 'electronics')">Додати до кошика</button>
+    `;
+        productList?.appendChild(productElement);
+    });
+    clothing.forEach(product => {
+        const productElement = document.createElement("div");
+        productElement.innerHTML = `
+      <h3>${product.name}</h3>
+      <p>Ціна: ${product.price} грн</p>
+      <button onclick="addToCartHandler(${product.id}, 'clothing')">Додати до кошика</button>
+    `;
+        productList?.appendChild(productElement);
+    });
 }
-const tShirt = findProduct(clothing, 2);
-if (tShirt) {
-    cart = addToCart(cart, tShirt, 2);
+function addToCartHandler(id, category) {
+    let product;
+    if (category === 'electronics') {
+        product = findProduct(electronics, id);
+    }
+    else if (category === 'clothing') {
+        product = findProduct(clothing, id);
+    }
+    if (product) {
+        cart = addToCart(cart, product, 1);
+        updateCartDisplay();
+    }
 }
-const total = calculateTotal(cart);
-console.log(`Загальна вартість кошика: ${total}`);
+function updateCartDisplay() {
+    const cartItems = document.getElementById("cart-items");
+    const totalPrice = document.getElementById("total-price");
+    cartItems.innerHTML = "";
+    cart.forEach(item => {
+        const itemElement = document.createElement("li");
+        itemElement.innerText = `${item.product.name} x ${item.quantity}`;
+        cartItems.appendChild(itemElement);
+    });
+    totalPrice.innerText = `Загальна вартість: ${calculateTotal(cart)} грн`;
+}
+displayProducts();
+window.addToCartHandler = addToCartHandler;
+window.updateCartDisplay = updateCartDisplay;

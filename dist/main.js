@@ -1,57 +1,63 @@
-import { findProduct } from './productFunctions';
-import { addToCart, calculateTotal } from './cartFunctions';
-const electronics = [
-    { id: 1, name: "Телефон", price: 10000, category: 'electronics', warrantyPeriod: 24 }
-];
-const clothing = [
-    { id: 2, name: "Футболка", price: 500, category: 'clothing', size: 'M', material: 'Cotton' }
-];
-let cart = [];
-function displayProducts() {
-    const productList = document.getElementById("product-list");
-    electronics.forEach(product => {
-        const productElement = document.createElement("div");
-        productElement.innerHTML = `
-      <h3>${product.name}</h3>
-      <p>Ціна: ${product.price} грн</p>
-      <button onclick="addToCartHandler(${product.id}, 'electronics')">Додати до кошика</button>
-    `;
-        productList?.appendChild(productElement);
-    });
-    clothing.forEach(product => {
-        const productElement = document.createElement("div");
-        productElement.innerHTML = `
-      <h3>${product.name}</h3>
-      <p>Ціна: ${product.price} грн</p>
-      <button onclick="addToCartHandler(${product.id}, 'clothing')">Додати до кошика</button>
-    `;
-        productList?.appendChild(productElement);
-    });
-}
-function addToCartHandler(id, category) {
-    let product;
-    if (category === 'electronics') {
-        product = findProduct(electronics, id);
-    }
-    else if (category === 'clothing') {
-        product = findProduct(clothing, id);
-    }
-    if (product) {
-        cart = addToCart(cart, product, 1);
-        updateCartDisplay();
-    }
-}
-function updateCartDisplay() {
-    const cartItems = document.getElementById("cart-items");
-    const totalPrice = document.getElementById("total-price");
-    cartItems.innerHTML = "";
-    cart.forEach(item => {
-        const itemElement = document.createElement("li");
-        itemElement.innerText = `${item.product.name} x ${item.quantity}`;
-        cartItems.appendChild(itemElement);
-    });
-    totalPrice.innerText = `Загальна вартість: ${calculateTotal(cart)} грн`;
-}
-displayProducts();
-window.addToCartHandler = addToCartHandler;
-window.updateCartDisplay = updateCartDisplay;
+"use strict";
+const canAccess = (role, action, resource) => {
+    const rolePermissions = {
+        admin: { create: true, read: true, update: true, delete: true },
+        editor: { create: true, read: true, update: true, delete: false },
+        viewer: { create: false, read: true, update: false, delete: false },
+    };
+    return rolePermissions[role][action];
+};
+const articleValidator = {
+    validate: (data) => {
+        const errors = [];
+        if (!data.title || data.title.trim() === '') {
+            errors.push('Title is required.');
+        }
+        if (!data.content || data.content.trim() === '') {
+            errors.push('Content is required.');
+        }
+        return { isValid: errors.length === 0, errors };
+    },
+};
+const versionControl = {
+    createNewVersion: (content) => ({
+        ...content,
+        version: content.version
+            ? content.version + 1
+            : 1,
+        previousVersions: [
+            ...content.previousVersions || [],
+            content,
+        ],
+    }),
+    getPreviousVersions: (content) => content.previousVersions || [],
+};
+// Приклад використання
+const articleOps = {
+    create: (content) => ({
+        ...content,
+        id: 'unique-id',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        status: 'draft',
+    }),
+    update: (id, changes) => ({
+        ...changes,
+        id,
+        updatedAt: new Date(),
+    }),
+    delete: (id) => true,
+    get: (id) => null,
+    list: (filters) => [],
+};
+const article = articleOps.create({
+    title: 'TypeScript CMS Design',
+    content: 'This is a sample article.',
+    author: 'Admin',
+    tags: ['typescript', 'cms'],
+    status: "draft"
+});
+const validated = articleValidator.validate(article);
+console.log(validated);
+const versionedArticle = versionControl.createNewVersion(article);
+console.log(versionedArticle);

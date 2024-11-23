@@ -1,95 +1,145 @@
-// Імпортуємо типи та функції з інших модулів
-import { Electronics, Clothing, CartItem, BaseProduct } from './types';
-import { findProduct, filterByPrice } from './productFunctions';
-import { addToCart, calculateTotal } from './cartFunctions';
-
-// Створення тестових даних для товарів електроніки та одягу
-const electronics: Electronics[] = [
-  { id: 1, name: "Телефон", price: 10000, category: 'electronics', warrantyPeriod: 24 }
-];
-
-const clothing: Clothing[] = [
-  { id: 2, name: "Футболка", price: 500, category: 'clothing', size: 'M', material: 'Cotton' }
-];
-
-// Ініціалізація порожнього кошика
-let cart: CartItem<BaseProduct>[] = [];
-
-/**
- * Функція для відображення списку товарів на веб-сторінці
- * Вона створює елементи DOM для кожного товару та додає кнопки "Додати до кошика"
- */
-function displayProducts() {
-  const productList = document.getElementById("product-list");
-
-  // Відображення товарів електроніки
-  electronics.forEach(product => {
-    const productElement = document.createElement("div");
-    productElement.innerHTML = `
-      <h3>${product.name}</h3>
-      <p>Ціна: ${product.price} грн</p>
-      <button onclick="addToCartHandler(${product.id}, 'electronics')">Додати до кошика</button>
-    `;
-    productList?.appendChild(productElement);
-  });
-
-  // Відображення товарів одягу
-  clothing.forEach(product => {
-    const productElement = document.createElement("div");
-    productElement.innerHTML = `
-      <h3>${product.name}</h3>
-      <p>Ціна: ${product.price} грн</p>
-      <button onclick="addToCartHandler(${product.id}, 'clothing')">Додати до кошика</button>
-    `;
-    productList?.appendChild(productElement);
-  });
-}
-
-/**
- * Функція обробки натискання кнопки "Додати до кошика"
- * @param id - ID товару, який додається в кошик
- * @param category - категорія товару ('electronics' або 'clothing')
- */
-function addToCartHandler(id: number, category: string) {
-  let product: BaseProduct | undefined;
-
-  // Знаходимо товар в залежності від категорії
-  if (category === 'electronics') {
-    product = findProduct(electronics, id);
-  } else if (category === 'clothing') {
-    product = findProduct(clothing, id);
+// Базова структура для контенту
+interface BaseContent {
+    id: string;
+    createdAt: Date;
+    updatedAt: Date;
+    publishedAt?: Date;
+    status: 'draft' | 'published' | 'archived';
   }
-
-  // Якщо товар знайдений, додаємо його в кошик
-  if (product) {
-    cart = addToCart(cart, product, 1);
-    updateCartDisplay(); // Оновлюємо відображення кошика
+  
+  interface Article extends BaseContent {
+    title: string;
+    content: string;
+    author: string;
+    tags?: string[];
   }
-}
-
-/**
- * Функція для оновлення відображення кошика на сторінці
- * Вона показує список товарів у кошику та загальну вартість
- */
-function updateCartDisplay() {
-  const cartItems = document.getElementById("cart-items");
-  const totalPrice = document.getElementById("total-price");
-
-  // Очищаємо список товарів у кошику перед оновленням
-  cartItems!.innerHTML = "";
-  cart.forEach(item => {
-    const itemElement = document.createElement("li");
-    itemElement.innerText = `${item.product.name} x ${item.quantity}`;
-    cartItems!.appendChild(itemElement);
+  
+  interface Product extends BaseContent {
+    name: string;
+    description: string;
+    price: number;
+    inStock: boolean;
+    category?: string;
+  }
+  
+  type ContentOperations<T extends BaseContent> = {
+    create: (content: Omit<T, 'id' | 'createdAt' | 'updatedAt'>) => T;
+    update: (id: string, changes: Partial<T>) => T;
+    delete: (id: string) => boolean;
+    get: (id: string) => T | null;
+    list: (filters?: Partial<T>) => T[];
+  };
+    
+// Система прав доступу
+  type Role = 'admin' | 'editor' | 'viewer';
+  
+  type Permission = {
+    create: boolean;
+    read: boolean;
+    update: boolean;
+    delete: boolean;
+  };
+  
+  type AccessControl<T extends BaseContent> = {
+    role: Role;
+    permissions: Permission;
+    resource: T;
+  };
+  
+  type AccessCheck<T extends BaseContent> = (
+    role: Role,
+    action: keyof Permission,
+    resource: T
+  ) => boolean;
+  
+  const canAccess: AccessCheck<BaseContent> = (role, action, resource) => {
+    const rolePermissions: Record<Role, Permission> = {
+      admin: { create: true, read: true, update: true, delete: true },
+      editor: { create: true, read: true, update: true, delete: false },
+      viewer: { create: false, read: true, update: false, delete: false },
+    };
+  
+    return rolePermissions[role][action];
+  };
+  
+// Система валідації
+  type Validator<T> = {
+    validate: (data: T) => ValidationResult;
+  };
+  
+  type ValidationResult = {
+    isValid: boolean;
+    errors?: string[];
+  };
+  
+  const articleValidator: Validator<Article> = {
+    validate: (data) => {
+      const errors: string[] = [];
+      if (!data.title || data.title.trim() === '') {
+        errors.push('Title is required.');
+      }
+      if (!data.content || data.content.trim() === '') {
+        errors.push('Content is required.');
+      }
+      return { isValid: errors.length === 0, errors };
+    },
+  };
+  
+// Система версіонування
+  type Versioned<T extends BaseContent> = T & {
+    version: number;
+    previousVersions?: T[];
+  };
+  
+  type VersionControl<T extends BaseContent> = {
+    createNewVersion: (content: T) => Versioned<T>;
+    getPreviousVersions: (content: Versioned<T>) => T[];
+  };
+  
+  const versionControl: VersionControl<BaseContent> = {
+    createNewVersion: (content) => ({
+      ...content,
+      version: (content as Versioned<BaseContent>).version
+        ? (content as Versioned<BaseContent>).version + 1
+        : 1,
+      previousVersions: [
+        ...(content as Versioned<BaseContent>).previousVersions || [],
+        content,
+      ],
+    }),
+    getPreviousVersions: (content) => content.previousVersions || [],
+  };
+  
+// Приклад використання
+  const articleOps: ContentOperations<Article> = {
+    create: (content) => ({
+      ...content,
+      id: 'unique-id',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      status: 'draft',
+    }),
+    update: (id, changes) => ({
+      ...changes,
+      id,
+      updatedAt: new Date(),
+    } as Article),
+    delete: (id) => true,
+    get: (id) => null,
+    list: (filters) => [],
+  };
+  
+  const article = articleOps.create({
+      title: 'TypeScript CMS Design',
+      content: 'This is a sample article.',
+      author: 'Admin',
+      tags: ['typescript', 'cms'],
+      status: "draft"
   });
-
-  // Оновлюємо відображення загальної вартості кошика
-  totalPrice!.innerText = `Загальна вартість: ${calculateTotal(cart)} грн`;
-}
-
-// Викликаємо функцію для відображення товарів на сторінці
-displayProducts();
-
-// Додаємо функції для доступу з глобального об'єкта window
-(window as any).addToCartHandler = addToCartHandler;
-(window as any).updateCartDisplay = updateCartDisplay;
+  
+  const validated = articleValidator.validate(article);
+  console.log(validated);
+  
+  const versionedArticle = versionControl.createNewVersion(article);
+  console.log(versionedArticle);
+  
